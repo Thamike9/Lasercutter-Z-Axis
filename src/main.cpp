@@ -2,22 +2,23 @@
 #include <AccelStepper.h>
 
 // Define pin connections
-#define DIR_PIN 13                  // Direction pin for stepper driver (GPIO5)
-#define STEP_PIN 14                 // Step pin for stepper driver (GPIO4)
-#define LIMIT_SWITCH_POSITIVE_PIN 0 // Positive Z-axis limit switch (GPIO2)
-#define LIMIT_SWITCH_NEGATIVE_PIN 2 // Negative Z-axis limit switch (GPIO0)
-#define BUTTON_UP_PIN 5             // Button for manual up movement (GPIO14)
-#define BUTTON_DOWN_PIN 4           // Button for manual down movement (GPIO12)
-#define BUTTON_AUTOFOCUS_PIN 12     // Button for autofocus (GPIO13)
+#define DIR_PIN D1                   // Direction pin for stepper driver (GPIO5)
+#define STEP_PIN D2                  // Step pin for stepper driver (GPIO4)
+#define LIMIT_SWITCH_POSITIVE_PIN D6 // Positive Z-axis limit switch (GPIO2)
+#define LIMIT_SWITCH_NEGATIVE_PIN D5 // Negative Z-axis limit switch (GPIO0)
+#define BUTTON_UP_PIN D3             // Button for manual up movement (GPIO14)
+#define BUTTON_DOWN_PIN D4           // Button for manual down movement (GPIO12)
+#define BUTTON_AUTOFOCUS_PIN D7      // Button for autofocus (GPIO13)
 
 // Parameters
 #define MOTOR_INTERFACE_TYPE 1 // Use 1 for a driver that needs step and direction
-#define MANUAL_SPEED 5000      // Speed for manual control (steps per second)
-#define AUTOFOCUS_SPEED 5000   // Speed for autofocus (steps per second)
-#define RETRACT_STEPS 1000     // Number of steps to retract when the limit switch is triggered
+#define MANUAL_SPEED 10000     // Speed for manual control (steps per second)
+#define AUTOFOCUS_SPEED 10000  // Speed for autofocus (steps per second)
+#define RETRACT_STEPS 54518    // Number of steps to retract when the limit switch is triggered
 
 // Initialize stepper
 AccelStepper stepper(MOTOR_INTERFACE_TYPE, STEP_PIN, DIR_PIN);
+long steps_focussed = 0;
 
 enum Mode
 {
@@ -68,19 +69,19 @@ void loop()
       {
         stepper.setSpeed(MANUAL_SPEED);
         stepper.runSpeed();
-        Serial.println("Manual Moving UP..");
+        // Serial.println("Manual Moving UP..");
       }
       else if (digitalRead(BUTTON_DOWN_PIN) == LOW && digitalRead(LIMIT_SWITCH_NEGATIVE_PIN) == HIGH)
       {
         stepper.setSpeed(-MANUAL_SPEED);
         stepper.runSpeed();
-        Serial.println("Manual Moving DOWN..");
+        // Serial.println("Manual Moving DOWN..");
       }
       else
       {
         stepper.stop();
+        // Serial.printf("Position: %d\n", stepper.currentPosition());
         stepper.setCurrentPosition(stepper.distanceToGo());
-        Serial.printf("Distance to go: %d\n", stepper.distanceToGo());
       }
     }
     break;
@@ -93,17 +94,20 @@ void loop()
       while (digitalRead(LIMIT_SWITCH_POSITIVE_PIN) == HIGH)
       {
         stepper.runSpeed();
-        Serial.println("Autofocus Moving UP..");
-        Serial.println(digitalRead(LIMIT_SWITCH_POSITIVE_PIN));
+        // delayMicroseconds(10);
+        // Serial.println("Autofocus Moving UP..");
+        // Serial.println(digitalRead(LIMIT_SWITCH_POSITIVE_PIN));
+        yield();
       }
 
       // Stop and retract
-      Serial.println("Positive limit switch triggered. Retracting...");
+      // Serial.println("Positive limit switch triggered. Retracting...");
       stepper.stop();
       stepper.move(-RETRACT_STEPS);
       while (stepper.distanceToGo() != 0)
       {
         stepper.run();
+        yield();
       }
       Serial.println("Autofocus Retract Complete.");
 
